@@ -1,13 +1,35 @@
 """CPU functionality."""
 
 import sys
+#load "immediate", store a value in a register, or "set this register to this value".
+LDI =  130   #10000010
+#a pseudo-instruction that prints the numeric value stored in a register.
+PRN = 71   #01000111 
+#halt the CPU and exit the emulator.
+HLT =  1 #00000001
+
 
 class CPU:
     """Main CPU class."""
 
     def __init__(self):
         """Construct a new CPU."""
-        pass
+        self.pc = 0
+        self.ram = [0] * 256
+        self.reg = [0] * 8
+        self.running = True
+        
+
+    #_Memory Address Register_ (MAR)
+    def ram_read(self, MAR):
+        return self.ram[MAR]
+        
+    #_Memory Data Register_ (MDR)
+    def ram_write(self, MAR, MDR):
+        self.ram[MAR] = MDR
+        return self.ram[MAR]
+        
+        
 
     def load(self):
         """Load a program into memory."""
@@ -62,4 +84,36 @@ class CPU:
 
     def run(self):
         """Run the CPU."""
-        pass
+        
+
+        while self.running:
+        # Instruction Register - internal part of CPU that holds a value.  Special purpose part of CPU.
+            IR = self.ram[self.pc]
+
+            # Set the value of a register to an integer.
+            if IR == LDI:
+                operand_a = self.ram_read(self.pc +1)
+                operand_b = self.ram_read(self.pc +2)
+                self.reg[operand_a] = operand_b
+                self.pc +=3
+            
+            # Halt the CPU (and exit the emulator).
+            elif IR == HLT:
+                return False
+
+            # Print numeric value stored in the given registe
+            elif IR == PRN:
+                operand_a = self.ram[self.pc +1]
+                print(self.reg[operand_a])
+                self.pc += 2
+            #if something is wrong. 
+            else:
+                print("ehh idk what to do")
+                sys.exit(1)
+
+        
+
+
+
+
+        
