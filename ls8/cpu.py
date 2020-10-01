@@ -87,23 +87,24 @@ class CPU:
         
 
         while self.running:
-        # Instruction Register - internal part of CPU that holds a value.  Special purpose part of CPU.
-            IR = self.ram[self.pc]
+            # Instruction Register - internal part of CPU that holds a value.  Special purpose part of CPU.
+            IR = self.ram_read(self.pc)
+            operand_a = self.ram_read(self.pc +1)
+            operand_b = self.ram_read(self.pc +2)
 
-            # Set the value of a register to an integer.
-            if IR == LDI:
-                operand_a = self.ram_read(self.pc +1)
-                operand_b = self.ram_read(self.pc +2)
-                self.reg[operand_a] = operand_b
-                self.pc +=3
-            
             # Halt the CPU (and exit the emulator).
-            elif IR == HLT:
+            if IR == HLT:
                 return False
 
-            # Print numeric value stored in the given registe
+            # Set the value of a register to an integer.
+            elif IR == LDI:
+    
+                self.reg[operand_a] = operand_b
+                self.pc +=3
+
+            # Print numeric value stored in the given register
             elif IR == PRN:
-                operand_a = self.ram[self.pc +1]
+
                 print(self.reg[operand_a])
                 self.pc += 2
             #if something is wrong. 
