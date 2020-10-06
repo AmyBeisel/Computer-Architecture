@@ -1,56 +1,42 @@
 """CPU functionality."""
 
 import sys
-#load "immediate", store a value in a register, or "set this register to this value".
-LDI =  130   #10000010
-#a pseudo-instruction that prints the numeric value stored in a register.
-PRN = 71   #01000111 
-#halt the CPU and exit the emulator.
-HLT =  1 #00000001
 
+HLT = 0b00000001
+LDI = 0b10000010
+PRN = 0b01000111
+MUL = 0b10100010
 
 class CPU:
     """Main CPU class."""
 
     def __init__(self):
         """Construct a new CPU."""
-        self.pc = 0
-        self.ram = [0] * 256
         self.reg = [0] * 8
-        self.running = True
-        
+        self.ram = [0] * 256
+        self.reg[7] = 0xF4
+        self.pc = 0
+        self.halted = False
 
-    #_Memory Address Register_ (MAR)
-    def ram_read(self, MAR):
-        return self.ram[MAR]
-        
-    #_Memory Data Register_ (MDR)
-    def ram_write(self, MAR, MDR):
-        self.ram[MAR] = MDR
-        return self.ram[MAR]
-        
-        
+    def ram_read(self, address):
+        return self.ram[address]
 
-    def load(self):
+    def ram_write(self, address, value):
+        self.ram[address] = value
+
+    def load(self, filename):
         """Load a program into memory."""
-
+        
         address = 0
-
-        # For now, we've just hardcoded a program:
-
-        program = [
-            # From print8.ls8
-            0b10000010, # LDI R0,8
-            0b00000000,
-            0b00001000,
-            0b01000111, # PRN R0
-            0b00000000,
-            0b00000001, # HLT
-        ]
-
-        for instruction in program:
-            self.ram[address] = instruction
-            address += 1
+        with open(filename) as fp:
+            for line in fp:
+                line_split = line.split("#")
+                num = line_split[0].strip()
+                if num == '':
+                    continue
+                value = int(num, 2)
+                self.ram[address] = value
+                address += 1
 
 
     def alu(self, op, reg_a, reg_b):
@@ -58,6 +44,9 @@ class CPU:
 
         if op == "ADD":
             self.reg[reg_a] += self.reg[reg_b]
+        elif op == "MUL":
+            self.reg[reg_a] *= self.reg[reg_b]
+            
         #elif op == "SUB": etc
         else:
             raise Exception("Unsupported ALU operation")
@@ -85,35 +74,34 @@ class CPU:
     def run(self):
         """Run the CPU."""
         
+        while not self.halted:
+            instruction_to_execute = self.ram_read(self.pc)
+            operand_a = self.ram_read(self.pc +1)
+            operand_b = self.ram_read(self.pc +2)
+            self.execute_instruction(instruction_to_execute, operand_a, operand_b)
+    def execute_instruction(self, instruction, operand_a, operand_b):
+        if instruction == HLT:
+            self.halted = True
+            self.pc += 1
+        elif instruction ==LDI:
+            self.reg[operand_a] = operand_b
+            self.pc +=3
+        elif instruction == PRN:
+            print(self.reg[operand_a])
+            self.pc += 2
 
-        while self.running:
-            # Instruction Register - internal part of CPU that holds a value.  Special purpose part of CPU.
-            IR = self.ram[self.pc]
+        elif instruction == MUL:
+            self.alu("MUL", operand_a, operand_b)
+            self.pc += 3
             
-            # Halt the CPU (and exit the emulator).
-            if IR == HLT:
-                return False
 
-            # Set the value of a register to an integer.
-            elif IR == LDI:
-                operand_a = self.ram_read(self.pc +1)
-                operand_b = self.ram_read(self.pc +2)
-                self.reg[operand_a] = operand_b
-                self.pc +=3
-
-            # Print numeric value stored in the given register
-            elif IR == PRN:
-                operand_a = self.ram[self.pc +1]
-                print(self.reg[operand_a])
-                self.pc += 2
-            #if something is wrong. 
-            else:
-                print("ehh idk what to do")
-                sys.exit(1)
+        else:
+            print("ehh idk what to do")
+            sys.exit(1)
+            
+ 
+        
 
         
 
 
-
-
-        
