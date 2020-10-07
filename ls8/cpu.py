@@ -2,10 +2,14 @@
 
 import sys
 
-HLT = 0b00000001
-LDI = 0b10000010
-PRN = 0b01000111
-MUL = 0b10100010
+HLT = 0b00000001 #halt 
+LDI = 0b10000010 
+PRN = 0b01000111 #Print
+MUL = 0b10100010 #Multiply
+ADD = 0b10100000 #Addition
+PUSH = 0b01000101 #push in stack
+POP = 0b01000110 #pop in stack
+
 
 class CPU:
     """Main CPU class."""
@@ -17,10 +21,10 @@ class CPU:
         self.reg[7] = 0xF4
         self.pc = 0
         self.halted = False
-
+    #Memory address
     def ram_read(self, address):
         return self.ram[address]
-
+    #Memory data
     def ram_write(self, address, value):
         self.ram[address] = value
 
@@ -75,25 +79,49 @@ class CPU:
         """Run the CPU."""
         
         while not self.halted:
+            #Instruction Register. internal part of CPU that holds a value
             instruction_to_execute = self.ram_read(self.pc)
             operand_a = self.ram_read(self.pc +1)
             operand_b = self.ram_read(self.pc +2)
             self.execute_instruction(instruction_to_execute, operand_a, operand_b)
-    def execute_instruction(self, instruction, operand_a, operand_b):
-        if instruction == HLT:
+    #helper function
+    def execute_instruction(self, IR, operand_a, operand_b):
+        if IR == HLT:
             self.halted = True
             self.pc += 1
-        elif instruction ==LDI:
+        elif IR == LDI:
             self.reg[operand_a] = operand_b
             self.pc +=3
-        elif instruction == PRN:
+        elif IR == PRN:
             print(self.reg[operand_a])
             self.pc += 2
-
-        elif instruction == MUL:
+        
+        elif IR == ADD:
+            self.alu("ADD", operand_a, operand_b)
+            self.pc += 3
+        elif IR == MUL:
             self.alu("MUL", operand_a, operand_b)
             self.pc += 3
-            
+        
+        elif IR == PUSH:
+            #decrement the stack pointer 
+            self.reg[7] -=1
+            #set R7 to variable SP
+            SP = self.reg[7]
+            #store the value in the register onto the top of the stack
+            value = self.reg[operand_a]
+            self.ram[SP] = value
+            #increment pc
+            self.pc +=2
+        elif IR == POP:
+            #read the value from the top of the stack
+            SP = self.reg[7]
+            #store the value to the given register
+            value = self.ram[SP]
+            self.reg[operand_a] = value
+            #increment stack pointer
+            self.reg[7] +=1
+            self.pc +=2
 
         else:
             print("ehh idk what to do")
