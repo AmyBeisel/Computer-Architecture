@@ -9,15 +9,16 @@ MUL = 0b10100010 #Multiply
 ADD = 0b10100000 #Addition
 PUSH = 0b01000101 #push in stack
 POP = 0b01000110 #pop in stack
-
+CALL = 0b01010000 
+RET = 0b00010001
 
 class CPU:
     """Main CPU class."""
 
     def __init__(self):
         """Construct a new CPU."""
-        self.reg = [0] * 8
-        self.ram = [0] * 256
+        self.reg = [0] * 8  #registers
+        self.ram = [0] * 256 #memory 
         self.reg[7] = 0xF4
         self.pc = 0
         self.halted = False
@@ -106,22 +107,39 @@ class CPU:
         elif IR == PUSH:
             #decrement the stack pointer 
             self.reg[7] -=1
-            #set R7 to variable SP
-            SP = self.reg[7]
+            #get the top of the stack
+            SP = self.reg[7] 
             #store the value in the register onto the top of the stack
-            value = self.reg[operand_a]
-            self.ram[SP] = value
+            value = self.reg[operand_a] #we want to push this value
+            self.ram[SP] = value #store the value at the top of the stack
             #increment pc
             self.pc +=2
         elif IR == POP:
+            #pops the value from the top of the stack and stores it in the given register
             #read the value from the top of the stack
-            SP = self.reg[7]
+            SP = self.reg[7]  #top most value in stack
             #store the value to the given register
-            value = self.ram[SP]
-            self.reg[operand_a] = value
+            value = self.ram[SP] #registor we want to store it in
+            self.reg[operand_a] = value #store the value in register
             #increment stack pointer
             self.reg[7] +=1
+            #increment pointer counter to the next instruction
             self.pc +=2
+        elif IR == CALL:
+            # store address of the next instruction onto the stack
+            self.reg[7] -=1 #decrement the SP
+            self.ram[self.reg[7]] = self.pc + 2 #push address of next instruction onto the stack
+            addressOfNextInstruction = self.ram_read(self.pc +1) #get the value from memory
+            # jump to the address stored in the given register
+            self.pc = self.reg[addressOfNextInstruction]
+        elif IR == RET:
+            SP = self.reg[7]
+            # pop the topmost value in the stack
+            addressToReturnTo = self.ram[SP]
+            self.reg[7] +=1 
+            # set the pc to that value
+            self.pc = addressToReturnTo
+        
 
         else:
             print("ehh idk what to do")
