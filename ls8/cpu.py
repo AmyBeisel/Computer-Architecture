@@ -11,6 +11,10 @@ PUSH = 0b01000101 #push in stack
 POP = 0b01000110 #pop in stack
 CALL = 0b01010000 
 RET = 0b00010001
+CMP = 0b10100111
+JMP = 0b01010100
+JEQ = 0b01010101
+JNE = 0b01010110
 
 class CPU:
     """Main CPU class."""
@@ -22,6 +26,8 @@ class CPU:
         self.reg[7] = 0xF4
         self.pc = 0
         self.halted = False
+        self.FL = 0b00000000
+    
     #Memory address
     def ram_read(self, address):
         return self.ram[address]
@@ -51,6 +57,13 @@ class CPU:
             self.reg[reg_a] += self.reg[reg_b]
         elif op == "MUL":
             self.reg[reg_a] *= self.reg[reg_b]
+        elif op == "CMP":
+            if self.reg[reg_a] < self.reg[reg_b]:
+                self.FL = 0b00000100
+            if self.reg[reg_a] > self.reg[reg_b]:
+                self.FL = 0b00000010
+            if self.reg[reg_a] == self.reg[reg_b]:
+                self.FL = 0b00000001
             
         #elif op == "SUB": etc
         else:
@@ -140,7 +153,34 @@ class CPU:
             # set the pc to that value
             self.pc = addressToReturnTo
         
-
+        #SPRINT CHALLENGE
+        #compare the values in the two registers
+        elif IR == CMP:
+            self.alu("CMP", operand_a, operand_b)
+            self.pc += 3
+        
+        # Jump to the address stored in the given register.
+        elif IR == JMP:
+            #get the address from register
+            register_number = self.ram_read(self.pc + 1)
+            #set pc to address
+            self.pc = self.reg[register_number]
+        
+        # If `equal` flag is set (true), jump to the address stored in the given register.
+        elif IR == JEQ:
+            if self.FL == 0b00000001:
+                register_number = self.ram_read(self.pc +1)
+                self.pc = self.reg[register_number]
+            else:
+                self.pc += 2
+        
+        #If `E` flag is clear (false, 0), jump to the address stored in the given register.
+        elif IR == JNE:
+            if self.FL != 0b00000001:
+                register_number = self.ram_read(self.pc +1)
+                self.pc = self.reg[register_number]
+            else:
+                self.pc += 2
         else:
             print("ehh idk what to do")
             sys.exit(1)
